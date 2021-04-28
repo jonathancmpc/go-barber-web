@@ -1,4 +1,10 @@
-import React, { InputHTMLAttributes, useEffect, useRef } from 'react';
+import React, {
+  InputHTMLAttributes,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { IconBaseProps } from 'react-icons/lib';
 import { useField } from '@unform/core';
 
@@ -9,28 +15,47 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ComponentType<IconBaseProps>;
 }
 
-const Input: React.FC<InputProps> = ({
-  name,
-  icon: Icon,
-  ...rest
-}: InputProps) => {
-  const inputRef = useRef(null);
+const Input: React.FC<InputProps> = ({ name, icon: Icon, ...rest }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [isFocused, setIsFocused] = useState(false);
+  const [isFilled, setIsFilled] = useState(false);
+
   const { fieldName, defaultValue, error, registerField } = useField(name);
 
-  // Assim que o componente for mostrado em tela queremos registrá-lo no unform(registerField)
+  // O useCallback não deixa a função ser recriada toda vez que a função pai(Input) é renderizada. Assim como no useEffect ela só é renderizada quando passamos algum parâmetro dentro dos colchetes[], caso venha vazio, ela só é renderizada uma vez(quando for chamada);
+  const handleInputFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    setIsFocused(false);
+
+    setIsFilled(!!inputRef.current?.value);
+  }, []);
+
   useEffect(() => {
     registerField({
       name: fieldName,
       ref: inputRef.current,
-      path:
-        'value' /* Dentro do html, onde estará o valor a ser capturado? Neste caso estará no value */,
+      path: 'value',
     });
-  }, [fieldName, registerField]);
+
+    if (defaultValue) {
+      setIsFilled(true);
+    }
+  }, [fieldName, registerField, defaultValue]);
 
   return (
-    <Container>
+    <Container isFocused={isFocused} isFilled={isFilled}>
       {Icon && <Icon size={20} />}
-      <input defaultValue={defaultValue} ref={inputRef} {...rest} />
+      <input
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
+        defaultValue={defaultValue}
+        ref={inputRef}
+        {...rest}
+      />
     </Container>
   );
 };
