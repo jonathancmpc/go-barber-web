@@ -1,18 +1,23 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { FiArrowLeft, FiMail, FiUser, FiLock } from 'react-icons/fi';
 import { Form } from '@unform/web';
 import * as Yup from 'yup';
 
+import { FormHandles } from '@unform/core';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 
 import logoImg from '../../assets/logo.svg';
 import { Container, Content, Background } from './styles';
+import { getValidationErrors } from '../../utils/getValidationErrors';
 
 const SignUp: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  const handleSubmit = useCallback(async (data: object) => {
+  const formRef = useRef<FormHandles>(null);
+
+  const handleSubmit = useCallback(async (data: unknown) => {
     try {
+      formRef.current?.setErrors({}); // Zerando os erros antes de validar novamente
+
       const schema = Yup.object().shape({
         name: Yup.string().required('Nome obrigatório'),
         email: Yup.string()
@@ -25,7 +30,7 @@ const SignUp: React.FC = () => {
         abortEarly: false /* Retorna todos os erros e não só o primeiro */,
       });
     } catch (err) {
-      console.log(err.errors);
+      formRef.current?.setErrors(getValidationErrors(err));
     }
   }, []);
 
@@ -38,6 +43,7 @@ const SignUp: React.FC = () => {
         <Form
           // initialData={{ email: 'jonathancmpc@gmail.com' }}
           onSubmit={handleSubmit}
+          ref={formRef}
         >
           <h1>Faça seu cadastro</h1>
 
